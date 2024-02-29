@@ -1,0 +1,277 @@
+#+PROPERTY: header-args :tangle init.el
+
+* Emacs Config
+** Initial Fixes & Changes
+*** UI
+Emacs's UI has a lot of cruft by default. Let's fix that.
+
+#+begin_src emacs-lisp
+  (scroll-bar-mode -1)
+  (menu-bar-mode -1)
+  (tool-bar-mode -1)
+  (tooltip-mode -1)
+  (setq inhibit-startup-screen t)
+#+end_src
+
+With that cruft gone, we can make the UI look a little better,
+starting with the fixed pitch font, which I've chosen to be the Nerd
+Font version of Mononoki.
+
+#+begin_src emacs-lisp
+  (set-face-attribute 'default nil :font "mononoki Nerd Font" :height 110)
+  (set-face-attribute 'fixed-pitch nil :font "mononoki Nerd Font" :height 110)
+#+end_src
+
+For a variable pitch font, I've chosen to rely on good ol' Cantarell.
+
+#+begin_src emacs-lisp
+  (set-face-attribute 'variable-pitch nil :font "Cantarell" :height 110)
+#+end_src
+
+We'll also spice things up with a little background transparency,
+which will look quite nice with the theme setting later in this
+config.
+
+#+begin_src emacs-lisp
+  (add-to-list 'default-frame-alist '(alpha-background . 85))
+#+end_src
+
+*** Convenience Variables
+
+Since there's a lot of settings that we'll want to be consistent
+across modes, we'll want a common place to put them, and put them
+early. This is where that will be.
+
+#+begin_src emacs-lisp
+  (defvar prisco/user-local-directory
+    (expand-file-name ".local/" user-emacs-directory))
+  (unless (file-directory-p prisco/user-local-directory)
+    (make-directory prisco/user-local-directory))
+
+  (defvar prisco/keymap-leader "SPC")
+  (defvar prisco/keymap-local-leader "SPC m")
+  (defvar prisco/keymap-global-leader "C-SPC")
+  (defvar prisco/keymap-global-local-leader "C-SPC m")
+#+end_src
+
+*** Byte Compilation
+
+Byte-compiling packages tends to throw a lot of warnings, which can
+be... more than a little annoying. Luckily, a variable can fix this.
+
+#+begin_src emacs-lisp
+  (setq byte-compile-warnings nil)
+#+end_src
+
+*** Measuring Startup Performance
+
+Startup lag is a real issue for making sure Emacs is as snappy as
+possible. With this snippet nicked from [[https://github.com/daviwil/emacs-from-scratch/blob/master/Emacs.org#startup-performance][Emacs From Scratch]], we can
+measure how long Emacs takes to start.
+
+#+begin_src emacs-lisp
+  ;; The default is 800 kilobytes.  Measured in bytes.
+  (setq gc-cons-threshold (* 50 1000 1000))
+
+  (defun efs/display-startup-time ()
+    (message "Emacs loaded in %s with %d garbage collections."
+             (format "%.2f seconds"
+                     (float-time
+                       (time-subtract after-init-time before-init-time)))
+             gcs-done))
+
+  (add-hook 'emacs-startup-hook #'efs/display-startup-time)
+#+end_src
+
+** Package Management
+
+Because of its predominant status and, well, not being a big fan of
+~package.el~, I'm electing to use ~straight.el~ for this
+config. Mostly because ~straight.el~ is dead simple. The following is
+bootstrap code taken from ~straight.el~'s repository, with
+~straight-base-dir~ set to be below ~prisco/user-local-directory~.
+
+#+begin_src emacs-lisp
+  (defvar straight-base-dir
+    (expand-file-name "share/" prisco/user-local-directory))
+
+  (defvar bootstrap-version)
+  (let ((bootstrap-file
+         (expand-file-name
+          "straight/repos/straight.el/bootstrap.el"
+          (or (bound-and-true-p straight-base-dir)
+              user-emacs-directory)))
+        (bootstrap-version 7))
+    (unless (file-exists-p bootstrap-file)
+      (with-current-buffer
+          (url-retrieve-synchronously
+           "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
+           'silent 'inhibit-cookies)
+        (goto-char (point-max))
+        (eval-print-last-sexp)))
+    (load bootstrap-file nil 'nomessage))
+#+end_src
+
+We'll also want to make sure that ~package.el~ Doesn't get loaded at
+startup. Since it gets loaded /very early/, though, we'll need to
+stick the relevant variable into ~early-init.el~.
+
+#+begin_src emacs-lisp :tangle early-init.el
+  (setq package-enable-at-startup nil)
+#+end_src
+
+In addition to ~straight.el~, we'll also want ~use-package~ to assist
+in configuring packages. To sweeten the deal, ~straight~ also has
+integration with ~use-package~.
+
+#+begin_src emacs-lisp
+  (straight-use-package 'use-package)
+  (setq straight-use-package-by-default t
+	use-package-always-defer t)
+#+end_src
+
+** Packages & Modes
+
+*** ~no-littering~
+As much as possible, I want to keep cruft /out/ of my config
+directory. So this will assist with that.
+
+#+begin_src emacs-lisp
+  (use-package no-littering
+    :demand t
+    :init
+    (setq no-littering-etc-directory
+  	(expand-file-name "etc" prisco/user-local-directory)
+  	no-littering-var-directory
+  	(expand-file-name "var" prisco/user-local-directory)
+  	custom-file
+  	(no-littering-expand-etc-file-name "custom.el")))
+#+end_src
+
+Additionally, the directories it creates can be made to store native
+compilation artifacts.
+
+#+begin_src emacs-lisp :tangle early-init.el
+  (when (fboundp 'startup-redirect-eln-cache)
+    (startup-redirect-eln-cache
+    	 (convert-standard-filename
+    	  (expand-file-name ".local/var/eln-cache/" user-emacs-directory))))
+#+end_src
+
+*** ~general~
+General is very useful for defining keys, especially with the leaders
+we defined earlier. It'll come in handy later.
+
+#+begin_src emacs-lisp
+  (use-package general
+    :demand t)
+#+end_src
+
+*** ~which-key~
+Knowing what command we're about to invoke with the keys we're going
+to hit will be wildly useful. Emacs may be a self-documenting editor,
+but the easier you can access that documentation, the less friction
+there will be in usage.
+
+#+begin_src emacs-lisp
+  (use-package which-key
+    :demand t
+    :hook (after-init . which-key-mode))
+#+end_src
+
+*** ~rainbow-delimiters~
+~rainbow-delimiters~ makes editing lisp (and frankly, all
+delimiter-braced code) easier by highlighting matching braces in
+matching colors.
+
+#+begin_src emacs-lisp
+  (use-package rainbow-delimiters
+    :hook (prog-mode . rainbow-delimiters-mode))
+#+end_src
+
+*** ~doom-modeline~
+Doom Emacs's modeline, for lack of a better term, fucks. I want it. So
+let's install it.
+
+#+begin_src emacs-lisp
+  (use-package doom-modeline
+    :hook (after-init . doom-modeline-mode)
+    :config
+    (setq doom-modeline-height 30))
+#+end_src
+
+*** ~doom-themes~
+Doom Emacs's theme system is also very very nice. So nice, in fact,
+that I took one of the themes and tweaked it for my own purposes,
+making ~doom-priscode~.
+
+#+begin_src emacs-lisp
+  (use-package doom-themes
+    :demand t
+    :init
+    (setq custom-theme-directory
+  	(concat (expand-file-name user-emacs-directory)
+  		"themes"))
+    (load-theme 'doom-priscode t))
+#+end_src
+
+*** ~evil~ & ~evil-collection~
+It is known that Emacs is an extensible program - a veritable
+Operating System, lacking only a good text editor. Evil mode brings
+that text editor. Evil Collection extends this capability to much more
+of Emacs's functionality.
+
+#+begin_src emacs-lisp
+  (use-package evil
+    :init
+    (setq evil-want-keybinding nil)
+    :hook (after-init . evil-mode))
+
+  (use-package evil-collection
+    :after evil
+    :hook (evil-mode . evil-collection-init))
+#+end_src
+
+*** ~org-mode~
+Org is the foundation of this config, and is arguably one of Emacs's
+killer features. So let's make sure we have the latest version.
+
+#+begin_src emacs-lisp
+  (use-package org
+    :config
+    (require 'org-tempo))
+#+end_src
+
+Since it's vital to keeping our config up to date, we should also make
+a hook to ensure that our config always gets tangled on save (and set
+up ~org-babel~ in general).
+
+#+BEGIN_SRC emacs-lisp
+  (defun prisco/org-babel-tangle-config ()
+    (when (string-equal (file-name-directory (buffer-file-name))
+  			(expand-file-name user-emacs-directory))
+      (let ((org-confirm-babel-evaluate nil))
+  	(org-babel-tangle))))
+  (add-hook 'org-mode-hook
+  	    (lambda ()
+  	      (add-hook 'after-save-hook
+  			#'prisco/org-babel-tangle-config)))
+#+END_SRC
+
+** Keybindings
+Keybinds, they make everything faster. However, Emacs's default
+keybinds are infamous for the RSI they cause. Since I'd like to keep
+typing in the long term, and I can already feel it setting in at the
+time of typing this, we'll be taking some preventative measures in the
+form of more convenient keybinds that dodge use of ~<control>~,
+instead using the ~prisco/keymap-*-leader~ keys whenever possible.
+
+#+begin_src emacs-lisp
+  (general-create-definer prisco/leader-def
+    :prefix prisco/keymap-leader
+    :global-prefix prisco/keymap-global-leader)
+
+  (general-create-definer prisco/localleader-def
+    :prefix prisco/keymap-local-leader
+    :prefix prisco/keymap-global-local-leader)
+#+end_src
