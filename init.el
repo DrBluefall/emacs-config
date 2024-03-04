@@ -114,16 +114,42 @@
 	      (add-hook 'after-save-hook
 			#'prisco/org-babel-tangle-config)))
 
+(use-package ivy
+  :hook (after-init . ivy-mode))
+
+(use-package ivy-rich
+  :after ivy
+  :hook (after-init . ivy-rich-mode))
+
+(use-package counsel
+  :after ivy
+  :hook (after-init . counsel-mode))
+
 (general-create-definer prisco/leader-def
-  :keymaps '(normal visual insert emacs)
+  :states '(normal visual emacs)
   :prefix prisco/keymap-leader
   :global-prefix prisco/keymap-global-leader)
 
 (general-create-definer prisco/localleader-def
-  :keymaps '(normal visual insert emacs)
+  :states '(normal visual emacs)
   :prefix prisco/keymap-local-leader
-  :prefix prisco/keymap-global-local-leader)
+  :global-prefix prisco/keymap-global-local-leader)
 
 (prisco/leader-def
   "f"  '(:ignore t :wk "Find file...")
   "ff" 'find-file)
+
+(prisco/leader-def
+  "q" '(:ignore t :wk "Quit...")
+  "qq" '(kill-emacs :wk "Quit Emacs"))
+
+(prisco/localleader-def
+  :keymaps 'org-mode-map
+  "i"  '(:ignore t :wk "Insert structure...")
+  "ih" '(org-insert-heading :wk "Insert a heading")
+  "ei" '(org-edit-special :wk "Edit item in structure"))
+
+(prisco/localleader-def
+  :keymaps 'org-src-mode-map
+  "cq" '(org-edit-src-exit :wk "Save and exit buffer")
+  "ca" '(org-edit-src-abort :wk "Discard edits and exit buffer"))

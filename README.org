@@ -258,6 +258,23 @@ up ~org-babel~ in general).
   			#'prisco/org-babel-tangle-config)))
 #+END_SRC
 
+*** ~ivy~ & ~counsel~
+
+Ivy's a completion mechanism for Emacs, swapping out ~ido~.
+
+#+begin_src emacs-lisp
+  (use-package ivy
+    :hook (after-init . ivy-mode))
+
+  (use-package ivy-rich
+    :after ivy
+    :hook (after-init . ivy-rich-mode))
+
+  (use-package counsel
+    :after ivy
+    :hook (after-init . counsel-mode))
+#+end_src
+
 ** Keybindings
 Keybinds, they make everything faster. However, Emacs's default
 keybinds are infamous for the RSI they cause. Since I'd like to keep
@@ -268,14 +285,14 @@ instead using the ~prisco/keymap-*-leader~ keys whenever possible.
 
 #+begin_src emacs-lisp
   (general-create-definer prisco/leader-def
-    :keymaps '(normal visual insert emacs)
+    :states '(normal visual emacs)
     :prefix prisco/keymap-leader
     :global-prefix prisco/keymap-global-leader)
 
   (general-create-definer prisco/localleader-def
-    :keymaps '(normal visual insert emacs)
+    :states '(normal visual emacs)
     :prefix prisco/keymap-local-leader
-    :prefix prisco/keymap-global-local-leader)
+    :global-prefix prisco/keymap-global-local-leader)
 #+end_src
 
 With these definers set, let's start with the basics:
@@ -286,4 +303,30 @@ With these definers set, let's start with the basics:
   (prisco/leader-def
     "f"  '(:ignore t :wk "Find file...")
     "ff" 'find-file)
+#+end_src
+
+*** Emacs Manipulation
+
+#+begin_src emacs-lisp
+  (prisco/leader-def
+    "q" '(:ignore t :wk "Quit...")
+    "qq" '(kill-emacs :wk "Quit Emacs"))
+#+end_src
+
+**** Mode-Specific
+
+***** ~org-mode~
+
+#+begin_src emacs-lisp
+  (prisco/localleader-def
+    :keymaps 'org-mode-map
+    "i"  '(:ignore t :wk "Insert structure...")
+    "ih" '(org-insert-heading :wk "Insert a heading")
+    "ei" '(org-edit-special :wk "Edit item in structure"))
+
+  (prisco/localleader-def
+    :keymaps 'org-src-mode-map
+    "cq" '(org-edit-src-exit :wk "Save and exit buffer")
+    "ca" '(org-edit-src-abort :wk "Discard edits and exit buffer"))
+
 #+end_src
