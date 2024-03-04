@@ -268,10 +268,22 @@ instead using the ~prisco/keymap-*-leader~ keys whenever possible.
 
 #+begin_src emacs-lisp
   (general-create-definer prisco/leader-def
+    :keymaps '(normal visual insert emacs)
     :prefix prisco/keymap-leader
     :global-prefix prisco/keymap-global-leader)
 
   (general-create-definer prisco/localleader-def
+    :keymaps '(normal visual insert emacs)
     :prefix prisco/keymap-local-leader
     :prefix prisco/keymap-global-local-leader)
+#+end_src
+
+With these definers set, let's start with the basics:
+
+*** File Navigation
+
+#+begin_src emacs-lisp
+  (prisco/leader-def
+    "f"  '(:ignore t :wk "Find file...")
+    "ff" 'find-file)
 #+end_src

@@ -81,7 +81,7 @@
 (use-package doom-modeline
   :hook (after-init . doom-modeline-mode)
   :config
-  (setq doom-modeline-height 30))
+  (setq doom-modeline-height 40))
 
 (use-package doom-themes
   :demand t
@@ -115,9 +115,15 @@
 			#'prisco/org-babel-tangle-config)))
 
 (general-create-definer prisco/leader-def
+  :keymaps '(normal visual insert emacs)
   :prefix prisco/keymap-leader
   :global-prefix prisco/keymap-global-leader)
 
 (general-create-definer prisco/localleader-def
+  :keymaps '(normal visual insert emacs)
   :prefix prisco/keymap-local-leader
   :prefix prisco/keymap-global-local-leader)
+
+(prisco/leader-def
+  "f"  '(:ignore t :wk "Find file...")
+  "ff" 'find-file)
