@@ -197,7 +197,7 @@ let's install it.
   (use-package doom-modeline
     :hook (after-init . doom-modeline-mode)
     :config
-    (setq doom-modeline-height 30))
+    (setq doom-modeline-height 40))
 #+end_src
 
 *** ~doom-themes~
