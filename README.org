@@ -326,9 +326,9 @@ With these definers set, let's start with the basics:
       "hk" 'describe-key)
 #+end_src
 
-**** Mode-Specific
+*** Mode-Specific
 
-***** ~org-mode~
+**** ~org-mode~
 
 #+begin_src emacs-lisp
   (prisco/localleader-def
@@ -341,5 +341,4 @@ With these definers set, let's start with the basics:
     :keymaps 'org-src-mode-map
     "cq" '(org-edit-src-exit :wk "Save and exit buffer")
     "ca" '(org-edit-src-abort :wk "Discard edits and exit buffer"))
-
 #+end_src
