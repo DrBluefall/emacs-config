@@ -11,6 +11,8 @@
 
 (add-to-list 'default-frame-alist '(alpha-background . 85))
 
+(setq-default fill-column 100)
+
 (defvar prisco/user-local-directory
   (expand-file-name ".local/" user-emacs-directory))
 (unless (file-directory-p prisco/user-local-directory)
@@ -104,6 +106,16 @@
   :config
   (require 'org-tempo))
 
+(use-package org-modern
+  :hook (org-mode . org-modern-mode)
+  :custom (org-modern-block-fringe nil))
+
+(use-package visual-fill-column
+  :custom (visual-fill-column-center-text t)
+  :hook (org-mode . visual-fill-column-mode)
+  :init
+  (add-hook 'org-mode-hook #'visual-line-mode))
+
 (defun prisco/org-babel-tangle-config ()
   (when (string-equal (file-name-directory (buffer-file-name))
 			(expand-file-name user-emacs-directory))
@@ -137,11 +149,19 @@
 
 (prisco/leader-def
   "f"  '(:ignore t :wk "Find file...")
-  "ff" 'find-file)
+  "ff" 'find-file
+  "fC" '((lambda ()
+	   (interactive)
+	   (find-file (expand-file-name "README.org" user-emacs-directory)))
+	 :wk "Open emacs config"))
 
 (prisco/leader-def
   "q" '(:ignore t :wk "Quit...")
-  "qq" '(kill-emacs :wk "Quit Emacs"))
+  "qq" '(kill-emacs :wk "Quit Emacs")
+  "h" '(:ignore t :wk "Help...")
+  "hf" 'describe-function
+  "hv" 'describe-variable
+  "hk" 'describe-key)
 
 (prisco/localleader-def
   :keymaps 'org-mode-map
