@@ -53,8 +53,8 @@ place to put them, and put them early. This is where that will be.
 
   (defvar prisco/keymap-leader "SPC")
   (defvar prisco/keymap-local-leader "SPC m")
-  (defvar prisco/keymap-global-leader "C-SPC")
-  (defvar prisco/keymap-global-local-leader "C-SPC m")
+  (defvar prisco/keymap-global-leader "C-c SPC")
+  (defvar prisco/keymap-global-local-leader "C-c SPC m")
 #+end_src
 
 *** Byte Compilation
@@ -281,6 +281,92 @@ Ivy's a completion mechanism for Emacs, swapping out ~ido~.
     :hook (after-init . counsel-mode))
 #+end_src
 
+*** ~company~
+
+For text completion, we rely on the gold standard, ~company~.
+
+#+begin_src emacs-lisp
+  (use-package company
+    :hook ((prog-mode . company-mode)
+  	 (text-mode . company-mode))
+    :bind (("TAB" . #'company-indent-or-complete-common)
+  	 :map company-active-map
+  	 ("TAB" . #'company-complete-common-or-cycle)
+  	 ("<backtab>" . (lambda ()
+  			  (interactive)
+  			  (company-complete-common-or-cycle -1))))
+    :config
+    (setq company-idle-delay 0.5))
+
+  (use-package company-box
+    :hook (company-mode . company-box-mode))
+#+end_src
+
+*** ~flycheck~
+
+Flycheck is a far better syntax-checking extension for Emacs than the built-in ~flymake~. It also integrates with the next section's ~lsp-mode~.
+
+#+begin_src emacs-lisp
+    (use-package flycheck
+      :hook (after-init . global-flycheck-mode))
+#+end_src
+
+*** ~lsp-mode~
+
+~lsp-mode~ is the defacto default /Language Server Protocol/ implementation for emacs. Since damn near every programming language worth its salt has a language server, we'll be using this.
+
+#+begin_src emacs-lisp
+  (use-package lsp-mode
+    :hook ((prog-mode . lsp)
+  	 (lsp-mode . lsp-enable-which-key-integration))
+
+    :init
+    (setq lsp-keymap-prefix (concat prisco/keymap-leader " c l")))
+
+  (use-package lsp-ui)
+#+end_src
+
+*** ~projectile~
+
+Projectile helps to manage and navigate projects. Helps when you've got more than one thing going at once.
+
+#+begin_src emacs-lisp
+  (use-package projectile
+    :hook (after-init . projectile-mode))
+#+end_src
+
+*** ~vterm~
+
+A better terminal emulator for emacs.
+
+#+begin_src emacs-lisp
+  (use-package vterm
+    :config
+    (setq vterm-kill-buffer-on-exit t
+  	vterm-always-compile-module t))
+#+end_src
+
+** Programming Languages
+
+Programming languages that I code in will require more specific configuration. That config will be here.
+
+*** Rust
+
+Let's start with Rust, since that's probably the language I've written the most code in. (Perhaps not the most productive code, but still.) Luckily, much of the needed legwork is trivialized by installing ~rustic~.
+
+#+begin_src emacs-lisp
+  (use-package rustic)
+#+end_src
+
+*** Elm
+
+Elm is vital to a current project of mine, so it gets special attention as well.
+
+#+begin_src emacs-lisp
+  (use-package elm-mode
+    :hook (elm-mode . elm-format-on-save-mode))
+#+end_src
+
 ** Keybindings
 Keybinds, they make everything faster. However, Emacs's default keybinds are infamous for the RSI
 they cause. Since I'd like to keep typing in the long term, and I can already feel it setting in at
@@ -317,13 +403,32 @@ With these definers set, let's start with the basics:
 *** Emacs Manipulation
 
 #+begin_src emacs-lisp
-    (prisco/leader-def
-      "q" '(:ignore t :wk "Quit...")
-      "qq" '(kill-emacs :wk "Quit Emacs")
-      "h" '(:ignore t :wk "Help...")
-      "hf" 'describe-function
-      "hv" 'describe-variable
-      "hk" 'describe-key)
+  (prisco/leader-def
+    "q" '(:ignore t :wk "Quit...")
+    "qq" '(kill-emacs :wk "Quit Emacs")
+    "h" '(:ignore t :wk "Help...")
+    "hf" 'describe-function
+    "hv" 'describe-variable
+    "hk" 'describe-key
+    "o"  '(:ignore t :wk "Open...")
+    "ot" 'vterm
+    "oT" 'vterm-other-window
+    "of" 'make-frame-command)
+#+end_src
+
+*** Project Management
+
+#+begin_src emacs-lisp
+  (prisco/leader-def
+    :keymaps 'projectile-mode-map
+    "p" 'projectile-command-map)
+
+  ;; Needed because of lsp-command-map being weird compared to projectile-command-map.
+  (prisco/leader-def
+    :package 'lsp
+    :definer 'minor-mode
+    :keymaps 'lsp-mode
+    "cl" '(:keymap lsp-command-map))
 #+end_src
 
 *** Mode-Specific

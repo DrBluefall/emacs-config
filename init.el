@@ -20,8 +20,8 @@
 
 (defvar prisco/keymap-leader "SPC")
 (defvar prisco/keymap-local-leader "SPC m")
-(defvar prisco/keymap-global-leader "C-SPC")
-(defvar prisco/keymap-global-local-leader "C-SPC m")
+(defvar prisco/keymap-global-leader "C-c SPC")
+(defvar prisco/keymap-global-local-leader "C-c SPC m")
 
 (setq byte-compile-warnings nil)
 
@@ -137,6 +137,46 @@
   :after ivy
   :hook (after-init . counsel-mode))
 
+(use-package company
+  :hook ((prog-mode . company-mode)
+	 (text-mode . company-mode))
+  :bind (("TAB" . #'company-indent-or-complete-common)
+	 :map company-active-map
+	 ("TAB" . #'company-complete-common-or-cycle)
+	 ("<backtab>" . (lambda ()
+			  (interactive)
+			  (company-complete-common-or-cycle -1))))
+  :config
+  (setq company-idle-delay 0.5))
+
+(use-package company-box
+  :hook (company-mode . company-box-mode))
+
+(use-package flycheck
+  :hook (after-init . global-flycheck-mode))
+
+(use-package lsp-mode
+  :hook ((prog-mode . lsp)
+	 (lsp-mode . lsp-enable-which-key-integration))
+
+  :init
+  (setq lsp-keymap-prefix (concat prisco/keymap-leader " c l")))
+
+(use-package lsp-ui)
+
+(use-package projectile
+  :hook (after-init . projectile-mode))
+
+(use-package vterm
+  :config
+  (setq vterm-kill-buffer-on-exit t
+	vterm-always-compile-module t))
+
+(use-package rustic)
+
+(use-package elm-mode
+  :hook (elm-mode . elm-format-on-save-mode))
+
 (general-create-definer prisco/leader-def
   :states '(normal visual emacs)
   :prefix prisco/keymap-leader
@@ -161,7 +201,22 @@
   "h" '(:ignore t :wk "Help...")
   "hf" 'describe-function
   "hv" 'describe-variable
-  "hk" 'describe-key)
+  "hk" 'describe-key
+  "o"  '(:ignore t :wk "Open...")
+  "ot" 'vterm
+  "oT" 'vterm-other-window
+  "of" 'make-frame-command)
+
+(prisco/leader-def
+  :keymaps 'projectile-mode-map
+  "p" 'projectile-command-map)
+
+;; Needed because of lsp-command-map being weird compared to projectile-command-map.
+(prisco/leader-def
+  :package 'lsp
+  :definer 'minor-mode
+  :keymaps 'lsp-mode
+  "cl" '(:keymap lsp-command-map))
 
 (prisco/localleader-def
   :keymaps 'org-mode-map
