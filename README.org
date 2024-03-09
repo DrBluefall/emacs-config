@@ -85,6 +85,12 @@ from [[https://github.com/daviwil/emacs-from-scratch/blob/master/Emacs.org#start
   (add-hook 'emacs-startup-hook #'efs/display-startup-time)
 #+end_src
 
+*** Misc. Fixes
+
+#+begin_src emacs-lisp
+  (setq epg-pinentry-mode 'loopback)
+#+end_src
+
 ** Package Management
 
 Because of its predominant status and, well, not being a big fan of ~package.el~, I'm electing to

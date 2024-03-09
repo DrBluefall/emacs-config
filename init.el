@@ -37,6 +37,8 @@
 
 (add-hook 'emacs-startup-hook #'efs/display-startup-time)
 
+(setq epg-pinentry-mode 'loopback)
+
 (defvar straight-base-dir
   (expand-file-name "share/" prisco/user-local-directory))
 
