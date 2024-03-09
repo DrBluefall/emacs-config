@@ -167,6 +167,8 @@
 (use-package projectile
   :hook (after-init . projectile-mode))
 
+(use-package magit)
+
 (use-package vterm
   :config
   (setq vterm-kill-buffer-on-exit t
@@ -217,6 +219,11 @@
   :definer 'minor-mode
   :keymaps 'lsp-mode
   "cl" '(:keymap lsp-command-map))
+
+(prisco/leader-def
+  "g" '(:ignore t :wk "Version control...")
+  "gs" '(magit-status :wk "Repository status buffer")
+  "gc" '(magit-commit-create :wk "Commit"))
 
 (prisco/localleader-def
   :keymaps 'org-mode-map

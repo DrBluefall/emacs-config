@@ -335,6 +335,14 @@ Projectile helps to manage and navigate projects. Helps when you've got more tha
     :hook (after-init . projectile-mode))
 #+end_src
 
+*** ~magit~
+
+If Org is one of emacs's killer features, then so is Magit. (Pronounced "maggot", not "majit", and I defy anyone to disagree with me.)
+
+#+begin_src emacs-lisp
+  (use-package magit)
+#+end_src
+
 *** ~vterm~
 
 A better terminal emulator for emacs.
@@ -429,6 +437,11 @@ With these definers set, let's start with the basics:
     :definer 'minor-mode
     :keymaps 'lsp-mode
     "cl" '(:keymap lsp-command-map))
+
+  (prisco/leader-def
+    "g" '(:ignore t :wk "Version control...")
+    "gs" '(magit-status :wk "Repository status buffer")
+    "gc" '(magit-commit-create :wk "Commit"))
 #+end_src
 
 *** Mode-Specific
