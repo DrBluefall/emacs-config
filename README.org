@@ -253,6 +253,9 @@ I'll also include some extra packages that'll aid in making org look nicer.
     :hook (org-mode . visual-fill-column-mode)
     :init
     (add-hook 'org-mode-hook #'visual-line-mode))
+
+  (use-package mixed-pitch
+    :hook ((org-mode text-mode) . mixed-pitch-mode))
 #+end_src
 
 Since it's vital to keeping our config up to date, we should also make a hook to ensure that our

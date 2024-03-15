@@ -118,6 +118,9 @@
   :init
   (add-hook 'org-mode-hook #'visual-line-mode))
 
+(use-package mixed-pitch
+  :hook ((org-mode text-mode) . mixed-pitch-mode))
+
 (defun prisco/org-babel-tangle-config ()
   (when (string-equal (file-name-directory (buffer-file-name))
 			(expand-file-name user-emacs-directory))
