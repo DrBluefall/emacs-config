@@ -106,7 +106,8 @@
 
 (use-package org
   :config
-  (require 'org-tempo))
+  (require 'org-tempo)
+  (setq org-hide-emphasis-markers t))
 
 (use-package org-modern
   :hook (org-mode . org-modern-mode)
@@ -141,6 +142,12 @@
 (use-package counsel
   :after ivy
   :hook (after-init . counsel-mode))
+
+(use-package helpful
+  :config
+  (with-eval-after-load 'counsel
+    (setq counsel-describe-function-function #'helpful-function
+	  counsel-describe-variable-function #'helpful-variable)))
 
 (use-package company
   :hook ((prog-mode . company-mode)
@@ -206,9 +213,10 @@
   "q" '(:ignore t :wk "Quit...")
   "qq" '(kill-emacs :wk "Quit Emacs")
   "h" '(:ignore t :wk "Help...")
-  "hf" 'describe-function
-  "hv" 'describe-variable
-  "hk" 'describe-key
+  "hf" 'helpful-function
+  "hv" 'helpful-variable
+  "hk" 'helpful-key
+  "hx" 'helpful-command
   "o"  '(:ignore t :wk "Open...")
   "ot" 'vterm
   "oT" 'vterm-other-window
