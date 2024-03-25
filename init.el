@@ -105,9 +105,19 @@
   :hook (evil-mode . evil-collection-init))
 
 (use-package org
+  :hook (org-mode . variable-pitch-mode)
   :config
   (require 'org-tempo)
-  (setq org-hide-emphasis-markers t))
+  (setq org-hide-emphasis-markers t)
+  (custom-theme-set-faces
+   'user
+   '(org-block ((t (:inherit fixed-pitch))))
+   '(org-code ((t (:inherit fixed-pitch shadow))))
+   '(org-meta-line ((t (:inherit (font-lock-comment-face fixed-pitch)))))
+   '(org-property-value ((t (:inherit fixed-pitch))))
+   '(org-special-keyword ((t (:inherit (font-lock-comment-face fixed-pitch)))))
+   '(org-tag ((t (:inherit (shadow fixed-pitch) :weight bold :height 0.8))))
+   '(org-verbatim ((t (:inherit (shadow fixed-pitch)))))))
 
 (use-package org-modern
   :hook (org-mode . org-modern-mode)
@@ -119,8 +129,25 @@
   :init
   (add-hook 'org-mode-hook #'visual-line-mode))
 
-(use-package mixed-pitch
-  :hook ((org-mode text-mode) . mixed-pitch-mode))
+(use-package org-appear
+  :straight (org-appear :type git
+		      :host github
+		      :repo "awth13/org-appear")
+  :init
+  (setq org-appear-trigger 'manual
+	org-appear-autolinks t)
+  :hook (org-mode . org-appear-mode)
+  :hook (org-mode . (lambda ()
+		      ;; This is necessary for org-appear to
+		      ;; play nicely with Evil Mode.
+		      (add-hook 'evil-insert-state-entry-hook
+				#'org-appear-manual-start
+				nil
+				t)
+		      (add-hook 'evil-insert-state-exit-hook
+				#'org-appear-manual-stop
+				nil
+				t))))
 
 (defun prisco/org-babel-tangle-config ()
   (when (string-equal (file-name-directory (buffer-file-name))
@@ -194,12 +221,12 @@
 (general-create-definer prisco/leader-def
   :states '(normal visual emacs)
   :prefix prisco/keymap-leader
-  :global-prefix prisco/keymap-global-leader)
+  :non-normal-prefix prisco/keymap-global-leader)
 
 (general-create-definer prisco/localleader-def
   :states '(normal visual emacs)
   :prefix prisco/keymap-local-leader
-  :global-prefix prisco/keymap-global-local-leader)
+  :non-normal-prefix prisco/keymap-global-local-leader)
 
 (prisco/leader-def
   "f"  '(:ignore t :wk "Find file...")
@@ -242,7 +269,8 @@
   :keymaps 'org-mode-map
   "i"  '(:ignore t :wk "Insert structure...")
   "ih" '(org-insert-heading :wk "Insert a heading")
-  "ei" '(org-edit-special :wk "Edit item in structure"))
+  "ei" '(org-edit-special :wk "Edit item in structure")
+  "de" '(org-export-dispatch :wk "Export File..."))
 
 (prisco/localleader-def
   :keymaps 'org-src-mode-map
