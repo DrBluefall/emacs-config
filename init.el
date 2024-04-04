@@ -1,3 +1,5 @@
+;; ~*~ lexical-binding: t; no-byte-compile: t ~*~
+
 (scroll-bar-mode -1)
 (menu-bar-mode -1)
 (tool-bar-mode -1)
@@ -7,7 +9,7 @@
 (set-face-attribute 'default nil :font "mononoki Nerd Font" :height 110)
 (set-face-attribute 'fixed-pitch nil :font "mononoki Nerd Font" :height 110)
 
-(set-face-attribute 'variable-pitch nil :font "Cantarell" :height 110)
+(set-face-attribute 'variable-pitch nil :font "Splatoon2:antialias=true" :height 120)
 
 (add-to-list 'default-frame-alist '(alpha-background . 85))
 
@@ -25,6 +27,10 @@
 
 (setq byte-compile-warnings nil)
 
+(recentf-mode 1)
+(setq recentf-max-menu-items 25
+      recentf-max-saved-items 25)
+
 ;; The default is 800 kilobytes.  Measured in bytes.
 (setq gc-cons-threshold (* 50 1000 1000))
 
@@ -36,8 +42,6 @@
            gcs-done))
 
 (add-hook 'emacs-startup-hook #'efs/display-startup-time)
-
-(setq epg-pinentry-mode 'loopback)
 
 (defvar straight-base-dir
   (expand-file-name "share/" prisco/user-local-directory))
@@ -106,6 +110,7 @@
 
 (use-package org
   :hook (org-mode . variable-pitch-mode)
+  :hook (org-mode . flyspell-mode)
   :config
   (require 'org-tempo)
   (setq org-hide-emphasis-markers t)
@@ -192,7 +197,13 @@
   :hook (company-mode . company-box-mode))
 
 (use-package flycheck
-  :hook (after-init . global-flycheck-mode))
+  :hook (after-init . global-flycheck-mode)
+  :hook ((org-src-mode emacs-lisp-mode)
+	 .
+	 (lambda ()
+		       (when (or (bound-and-true-p org-src-mode)
+				 (string= (buffer-name) "*scratch*"))
+			 (setq-local flycheck-disabled-checkers '(emacs-lisp-checkdoc))))))
 
 (use-package lsp-mode
   :hook ((prog-mode . lsp)
@@ -213,10 +224,59 @@
   (setq vterm-kill-buffer-on-exit t
 	vterm-always-compile-module t))
 
+(defun prisco/flyspell-save-word-to-personal-dict ()
+  (interactive)
+  (let ((current-location (point))
+	(word (flyspell-get-word)))
+    (when (consp word)
+      (flyspell-do-correct 'save
+			   nil
+			   (car word)
+			   current-location
+			   (cadr word)
+			   (caddr word)
+			   current-location))))
+
+(use-package flyspell-correct
+  :after flyspell)
+
+(use-package flyspell-correct-ivy
+  :after flyspell-correct)
+
+(add-hook 'prog-mode-hook 'electric-pair-local-mode)
+
 (use-package rustic)
 
 (use-package elm-mode
   :hook (elm-mode . elm-format-on-save-mode))
+
+(use-package sly
+  :config
+  (let ((roswell-exec (executable-find "ros")))
+    (when roswell-exec
+      (load (expand-file-name "~/.roswell/helper.el"))
+      (setq inferior-lisp-program "ros -Q run"))))
+
+(use-package auctex
+  :hook ((tex-mode . visual-line-mode)
+	 (tex-mode . visual-fill-column-mode)
+	 (tex-mode . flyspell-mode))
+  :config
+  (setq TeX-auto-save t
+	TeX-parse-self t)
+  (setq-default TeX-master nil))
+
+(use-package latex-preview-pane
+  :config
+  (latex-preview-pane-enable)
+  (setq-default pdf-latex-command "xelatex"))
+
+(use-package lsp-latex
+  :after (lsp auctex)
+  :hook ((tex-mode latex-mode) . lsp))
+
+(use-package modern-cpp-font-lock
+  :hook (c++-mode . modern-c++-font-lock-mode))
 
 (general-create-definer prisco/leader-def
   :states '(normal visual emacs)
@@ -230,7 +290,8 @@
 
 (prisco/leader-def
   "f"  '(:ignore t :wk "Find file...")
-  "ff" 'find-file
+  "ff" 'counsel-find-file
+  "fr" 'counsel-recentf
   "fC" '((lambda ()
 	   (interactive)
 	   (find-file (expand-file-name "README.org" user-emacs-directory)))
@@ -276,3 +337,10 @@
   :keymaps 'org-src-mode-map
   "cq" '(org-edit-src-exit :wk "Save and exit buffer")
   "ca" '(org-edit-src-abort :wk "Discard edits and exit buffer"))
+
+(prisco/localleader-def
+  :keymaps 'flyspell-mode-map
+  "fs"  '(:ignore t :wk "Flyspell...")
+  "fsb" '(flyspell-buffer :wk "Scan buffer")
+  "fsd" '(prisco/flyspell-save-word-to-personal-dict :wk "Save word")
+  "fsc" '(flyspell-correct-wrapper :wk "Correct word"))

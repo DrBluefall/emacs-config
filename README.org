@@ -1,5 +1,9 @@
 #+PROPERTY: header-args :tangle init.el
 
+#+begin_src emacs-lisp :exports none
+  ;; ~*~ lexical-binding: t; no-byte-compile: t ~*~
+#+end_src
+
 * Emacs Config
 ** Initial Fixes & Changes
 *** UI
@@ -21,10 +25,11 @@ which I've chosen to be the Nerd Font version of Mononoki.
   (set-face-attribute 'fixed-pitch nil :font "mononoki Nerd Font" :height 110)
 #+end_src
 
-For a variable pitch font, I've chosen to rely on good ol' Cantarell.
+For a variable pitch font, I've chosen an option for my own amusement: Splatoon 2's font.
+NOTE TO SELF: Add convenience function to toggle this to Cantarell at some point.
 
 #+begin_src emacs-lisp
-  (set-face-attribute 'variable-pitch nil :font "Cantarell" :height 110)
+  (set-face-attribute 'variable-pitch nil :font "Splatoon2:antialias=true" :height 120)
 #+end_src
 
 We'll also spice things up with a little background transparency, which will look quite nice with
@@ -66,6 +71,15 @@ annoying. Luckily, a variable can fix this.
   (setq byte-compile-warnings nil)
 #+end_src
 
+*** Accessing Recent Files
+
+This can be done via ~recentf~.
+#+begin_src emacs-lisp
+  (recentf-mode 1)
+  (setq recentf-max-menu-items 25
+        recentf-max-saved-items 25)
+#+end_src
+
 *** Measuring Startup Performance
 
 Startup lag is a real issue for making sure Emacs is as snappy as possible. With this snippet nicked
@@ -83,12 +97,6 @@ from [[https://github.com/daviwil/emacs-from-scratch/blob/master/Emacs.org#start
              gcs-done))
 
   (add-hook 'emacs-startup-hook #'efs/display-startup-time)
-#+end_src
-
-*** Misc. Fixes
-
-#+begin_src emacs-lisp
-  (setq epg-pinentry-mode 'loopback)
 #+end_src
 
 ** Package Management
@@ -238,6 +246,7 @@ sure we have the latest version.
 #+begin_src emacs-lisp
   (use-package org
     :hook (org-mode . variable-pitch-mode)
+    :hook (org-mode . flyspell-mode)
     :config
     (require 'org-tempo)
     (setq org-hide-emphasis-markers t)
@@ -354,8 +363,14 @@ For text completion, we rely on the gold standard, ~company~.
 Flycheck is a far better syntax-checking extension for Emacs than the built-in ~flymake~. It also integrates with the next section's ~lsp-mode~.
 
 #+begin_src emacs-lisp
-    (use-package flycheck
-      :hook (after-init . global-flycheck-mode))
+  (use-package flycheck
+    :hook (after-init . global-flycheck-mode)
+    :hook ((org-src-mode emacs-lisp-mode)
+  	 .
+  	 (lambda ()
+  		       (when (or (bound-and-true-p org-src-mode)
+  				 (string= (buffer-name) "*scratch*"))
+  			 (setq-local flycheck-disabled-checkers '(emacs-lisp-checkdoc))))))
 #+end_src
 
 *** ~lsp-mode~
@@ -384,7 +399,7 @@ Projectile helps to manage and navigate projects. Helps when you've got more tha
 
 *** ~magit~
 
-If Org is one of emacs's killer features, then so is Magit. (Pronounced "maggot", not "majit", and I defy anyone to disagree with me.)
+If Org is one of Emacs's killer features, then so is Magit. (Pronounced "maggot", not "majit", and I defy anyone to disagree with me.)
 
 #+begin_src emacs-lisp
   (use-package magit)
@@ -401,9 +416,48 @@ A better terminal emulator for emacs.
   	vterm-always-compile-module t))
 #+end_src
 
+*** ~flyspell~
+
+Flyspell is a built-in package, so it needs no install from ~straight~. Instead, we're going to pull in some useful things to make using Flyspell easier.
+
+There's no standalone function to save a word to your personal dictionary in Flyspell. Luckily, a [[https://stackoverflow.com/a/22116480][Stack Overflow]] answer comes to the rescue:
+
+#+begin_src emacs-lisp
+  (defun prisco/flyspell-save-word-to-personal-dict ()
+    (interactive)
+    (let ((current-location (point))
+  	(word (flyspell-get-word)))
+      (when (consp word)
+        (flyspell-do-correct 'save
+  			   nil
+  			   (car word)
+  			   current-location
+  			   (cadr word)
+  			   (caddr word)
+  			   current-location))))
+#+end_src
+
+Secondly, a more convenient interface for Flyspell exists than the default, since it integrates with Ivy: ~flyspell-correct~.
+
+#+begin_src emacs-lisp
+  (use-package flyspell-correct
+    :after flyspell)
+
+  (use-package flyspell-correct-ivy
+    :after flyspell-correct)
+#+end_src
+
 ** Programming Languages
 
 Programming languages that I code in will require more specific configuration. That config will be here.
+
+Some things, however, will be useful across all languages, and will be put here:
+
+#+begin_src emacs-lisp
+
+  (add-hook 'prog-mode-hook 'electric-pair-local-mode)
+
+#+end_src
 
 *** Rust
 
@@ -420,6 +474,53 @@ Elm is vital to a current project of mine, so it gets special attention as well.
 #+begin_src emacs-lisp
   (use-package elm-mode
     :hook (elm-mode . elm-format-on-save-mode))
+#+end_src
+
+*** Common Lisp
+The programmable programming language for the extensible display editor. We'll be ditching SLIME in favor of [[https://github.com/joaotavora/sly][Sly]]. If Roswell's available, we'll also make sure that's set up.
+
+#+begin_src emacs-lisp
+  (use-package sly
+    :config
+    (let ((roswell-exec (executable-find "ros")))
+      (when roswell-exec
+        (load (expand-file-name "~/.roswell/helper.el"))
+        (setq inferior-lisp-program "ros -Q run"))))
+#+end_src
+
+*** LaTeX
+Is LaTeX a programming language? No. Not in the slightest. I'm putting it in this section anyway because I can and it's my config. Bite me.
+
+We're using AUCTeX, alongside ~lsp-latex~ to fully utilize the ~texlab~ language server. ~latex-preview-pane~ will also make sure we can get a preview of any document we produce - a pseudo-WYSIWYG feature.
+
+#+begin_src emacs-lisp
+  (use-package auctex
+    :hook ((tex-mode . visual-line-mode)
+  	 (tex-mode . visual-fill-column-mode)
+  	 (tex-mode . flyspell-mode))
+    :config
+    (setq TeX-auto-save t
+  	TeX-parse-self t)
+    (setq-default TeX-master nil))
+
+  (use-package latex-preview-pane
+    :config
+    (latex-preview-pane-enable)
+    (setq-default pdf-latex-command "xelatex"))
+
+  (use-package lsp-latex
+    :after (lsp auctex)
+    :hook ((tex-mode latex-mode) . lsp))
+
+#+end_src
+
+*** C++
+
+C++ is definitely an interesting language. Most of what I need can easily be delivered by ~clangd~ (which is an installation exercise I leave to the reader (assuming anyone is actually READING this config)). I'll be using a more modern fontlock, though, appropriately from ~modern-cpp-font-lock~.
+
+#+begin_src emacs-lisp
+  (use-package modern-cpp-font-lock
+    :hook (c++-mode . modern-c++-font-lock-mode))
 #+end_src
 
 ** Keybindings
@@ -444,7 +545,8 @@ With these definers set, let's start with the basics:
 #+begin_src emacs-lisp
   (prisco/leader-def
     "f"  '(:ignore t :wk "Find file...")
-    "ff" 'find-file
+    "ff" 'counsel-find-file
+    "fr" 'counsel-recentf
     "fC" '((lambda ()
   	   (interactive)
   	   (find-file (expand-file-name "README.org" user-emacs-directory)))
@@ -504,4 +606,15 @@ With these definers set, let's start with the basics:
     :keymaps 'org-src-mode-map
     "cq" '(org-edit-src-exit :wk "Save and exit buffer")
     "ca" '(org-edit-src-abort :wk "Discard edits and exit buffer"))
+#+end_src
+
+**** ~flyspell~
+
+#+begin_src emacs-lisp
+  (prisco/localleader-def
+    :keymaps 'flyspell-mode-map
+    "fs"  '(:ignore t :wk "Flyspell...")
+    "fsb" '(flyspell-buffer :wk "Scan buffer")
+    "fsd" '(prisco/flyspell-save-word-to-personal-dict :wk "Save word")
+    "fsc" '(flyspell-correct-wrapper :wk "Correct word"))
 #+end_src
